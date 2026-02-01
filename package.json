@@ -7,13 +7,24 @@
     "Rokn Hamdan"
   ],
   "description": "Easily start developing in monorepos with docker-compose",
-  "main": "dist/cli.js",
-  "bin": "./bin/devctl.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": "./bin/run.js",
   "scripts": {
     "build": "tsc -b",
     "clean": "rimraf dist/",
     "dist": "tsc --sourceMap false",
-    "prepare": "$npm_execpath run clean && $npm_execpath run dist"
+    "prepare": "$npm_execpath run clean && $npm_execpath run dist",
+    "postpack": "rm -f oclif.manifest.json",
+    "prepack": "yarn run build && oclif manifest"
+  },
+  "oclif": {
+    "bin": "devctl",
+    "dirname": "devctl",
+    "commands": "./dist/commands",
+    "plugins": [],
+    "topicSeparator": " ",
+    "topics": {}
   },
   "files": [
     "src",
@@ -34,7 +45,9 @@
     "@cipherstash/gluegun": "^5.1.2",
     "@expo/spawn-async": "^1.7.0",
     "@google-cloud/secret-manager": "^4.2.1",
+    "@oclif/core": "^4.8.0",
     "bluebird": "^3.7.2",
+    "chalk": "4",
     "concurrently": "^5.0.2",
     "cosmiconfig": "8",
     "deepmerge": "^4.2.2",
@@ -44,10 +57,15 @@
     "js-yaml": "^3.13.1",
     "lodash": "^4.17.15",
     "mustache": "^4.2.0",
-    "node_modules-path": "^2.0.5"
+    "node_modules-path": "^2.0.5",
+    "oclif": "^4.22.71"
   },
   "devDependencies": {
+    "@oclif/test": "^4.1.16",
     "@types/bluebird": "^3.5.38",
+    "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/lodash": "^4.17.23",
     "@types/mustache": "^4.2.2",
     "@types/node": "^16",
     "@typescript-eslint/eslint-plugin": "^5.54.0",

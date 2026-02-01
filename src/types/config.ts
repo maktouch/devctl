@@ -49,10 +49,11 @@ export interface DevctlCurrent {
 }
 
 export interface DevctlConfig {
-  services?: ServicesConfigEntry[];
+  services?: ServicesConfigEntry[] | {[key: string]: ServicesConfigEntry};
   secrets?: SecretsProviderEntry[];
-  environment?: EnvironmentConfigEntry[];
-  current?: DevctlCurrent;
+  environment?: EnvironmentConfigEntry[] | {[key: string]: EnvironmentConfigEntry};
+  current?: Partial<DevctlCurrent>;
+  compiledSecrets?: any;
   cwd?: string;
   paths?: {
     [key: string]: string;
