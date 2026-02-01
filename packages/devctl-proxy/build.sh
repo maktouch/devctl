@@ -5,7 +5,7 @@ set -o pipefail
 set -o nounset
 
 SERVICE_NAME=devctl-proxy
-TAG_PREFIX=splitmedialabs
+TAG_PREFIX=maktouch
 
 if [[ -z "${COMMIT_SHA:-}" ]] ; then
   COMMIT_SHA="latest"

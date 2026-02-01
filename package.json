@@ -1,9 +1,9 @@
 {
-  "name": "@splitmedialabs/devctl",
+  "name": "@maktouch/devctl",
   "version": "5.0.0",
   "contributors": [
     "Makara Sok",
-    "Enrico Suarez <ensu@splitmedialabs.com>",
+    "Enrico Suarez",
     "Rokn Hamdan"
   ],
   "description": "Easily start developing in monorepos with docker-compose",
@@ -37,10 +37,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SplitmediaLabsLimited/devctl.git"
+    "url": "git+https://github.com/maktouch/devctl.git"
   },
   "bugs": {
-    "url": "https://github.com/SplitmediaLabsLimited/devctl/issues"
+    "url": "https://github.com/maktouch/devctl/issues"
   },
   "license": "MIT",
   "dependencies": {

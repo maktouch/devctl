@@ -161,7 +161,7 @@ export default class Compile extends BaseCommand {
       }
 
       finalDockerCompose['devctl-proxy'] = {
-        image: 'splitmedialabs/devctl-proxy:latest',
+        image: 'maktouch/devctl-proxy:latest',
         restart: 'always',
         ports,
         environment,

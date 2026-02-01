@@ -31,7 +31,7 @@ DevCTL is a CLI app designed to:
 - You switch between projects back and forth, and they all have their own services to run, and they collide in ports.
 - You have a new guy to onboard fast.
 
-DevCTL decreases the onboarding time of new devs in any of our projects at Splitmedialabs. All the new users needs to have installed is docker (with docker compose V2) and NodeJS 16+. Once a project is setup with devctl, its users does not require knowledge of docker.
+DevCTL decreases the onboarding time of new devs in any of our projects. All the new users needs to have installed is docker (with docker compose V2) and NodeJS 16+. Once a project is setup with devctl, its users does not require knowledge of docker.
 
 ## What DevCTL is **NOT**
 
@@ -42,9 +42,9 @@ DevCTL decreases the onboarding time of new devs in any of our projects at Split
 
 ```bash
 # Install globally
-pnpm add -g @splitmedialabs/devctl
+pnpm add -g @maktouch/devctl
 # or
-npm install -g @splitmedialabs/devctl
+npm install -g @maktouch/devctl
 
 # Initialize a new project
 devctl init
