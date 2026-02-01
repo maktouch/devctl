@@ -50,19 +50,32 @@ export default class Status extends BaseCommand {
   }
 
   private printTable(data: string[][]): void {
-    // Calculate column widths by stripping ANSI codes
+    // Calculate column widths by stripping ANSI codes for accurate measurements
     const colWidths = data[0].map((_, colIndex) =>
-      Math.max(...data.map(row => stripAnsi(row[colIndex] || '').length))
+      Math.max(...data.map(row => {
+        const cellLines = (row[colIndex] || '').split('\n')
+        return Math.max(...cellLines.map(line => stripAnsi(line).length))
+      }))
     )
 
-    // Print each row with proper padding
-    for (const row of data) {
-      const formatted = row.map((cell, i) => {
-        const stripped = stripAnsi(cell)
-        const padding = colWidths[i] - stripped.length
-        return cell + ' '.repeat(padding)
-      })
-      this.log(formatted.join('  '))
+    // Print each row with proper padding, handling multi-line cells
+    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
+      const row = data[rowIndex]
+
+      // Split each cell by newlines to handle multi-line content
+      const cellLines = row.map(cell => (cell || '').split('\n'))
+      const maxLines = Math.max(...cellLines.map(lines => lines.length))
+
+      // Print each line of this row
+      for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
+        const formatted = cellLines.map((lines, colIndex) => {
+          const line = lines[lineIndex] || ''
+          const stripped = stripAnsi(line)
+          const padding = colWidths[colIndex] - stripped.length
+          return line + ' '.repeat(padding)
+        })
+        process.stdout.write(formatted.join('  ') + '\n')
+      }
     }
   }
 }
