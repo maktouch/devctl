@@ -18,6 +18,20 @@ export abstract class BaseCommand extends Command {
 
   // Helper to run another command (for backward compatibility with old pattern)
   async runCommand(commandName: string, args: string[] = []): Promise<void> {
-    await this.config.runCommand(commandName, args)
+    // Map command names to file names
+    const commandMap: Record<string, string> = {
+      'pull-secrets': 'secrets',
+      'switch-current': 'switch-current',
+      'compile': 'compile',
+      'up': 'up',
+      'down': 'down',
+      'status': 'status',
+    }
+
+    const fileName = commandMap[commandName] || commandName
+
+    // Use oclif's command execution by dynamically importing the command
+    const {default: CommandClass} = await import(`./commands/${fileName}`)
+    await CommandClass.run(args)
   }
 }

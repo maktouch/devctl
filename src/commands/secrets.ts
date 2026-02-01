@@ -23,8 +23,8 @@ export default class Secrets extends BaseCommand {
     if (!current || !current.environment) {
       // if current isn't set, run switch, then rerun pull secrets
       console.log(".devctl-current.yaml doesn't exist, creating...")
-      await this.config.runCommand('switch-current', [])
-      return this.config.runCommand('pull-secrets', [])
+      await this.runCommand('switch-current', [])
+      return this.runCommand('pull-secrets', [])
     }
 
     const {environment} = current

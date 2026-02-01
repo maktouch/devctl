@@ -30,18 +30,18 @@ export default class Up extends BaseCommand {
 
     if (!compose) {
       // If no compose file, run switch to generate one
-      await this.config.runCommand('switch', [])
+      await this.runCommand('switch', [])
       return
     }
 
     await runScripts(allScripts, 'afterSwitch', false)
 
     // Shut down first
-    await this.config.runCommand('down', [])
+    await this.runCommand('down', [])
 
     // If secrets exist in the config, pull them
     if (secrets && existsSync(secrets)) {
-      await this.config.runCommand('pull-secrets', [])
+      await this.runCommand('pull-secrets', [])
     }
 
     // Write compose file path to home directory for tracking
@@ -56,7 +56,7 @@ export default class Up extends BaseCommand {
     })
 
     // Show status
-    await this.config.runCommand('status', [])
+    await this.runCommand('status', [])
 
     await runScripts(allScripts, 'start', true)
   }
