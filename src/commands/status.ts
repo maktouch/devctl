@@ -1,7 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import get from 'lodash/get'
 import chalk from 'chalk'
-import stripAnsi from 'strip-ansi'
+import Table from 'cli-table3'
 import {BaseCommand} from '../base-command'
 
 export default class Status extends BaseCommand {
@@ -29,57 +29,29 @@ export default class Status extends BaseCommand {
       return
     }
 
-    const table: string[][] = [
-      ['Service', 'Notes'],
-      ...services.map((svc: string) => {
-        const service = (this.projectConfig.services as any)[svc]
+    const table = new Table({
+      head: ['Service', 'Notes'],
+      wordWrap: true,
+    })
 
-        const note = get(service, 'notes', '')
-          .split('\n')
-          .map((line: string) => {
-            if (line.startsWith('    ')) {
-              return chalk.cyan(line)
-            } else {
-              return line
-            }
-          })
-          .join('\n')
-          .trim()
+    services.forEach((svc: string) => {
+      const service = (this.projectConfig.services as any)[svc]
 
-        return [service.name, note]
-      }),
-    ]
-
-    this.printTable(table)
-  }
-
-  private printTable(data: string[][]): void {
-    // Calculate column widths by stripping ANSI codes for accurate measurements
-    const colWidths = data[0].map((_, colIndex) =>
-      Math.max(...data.map(row => {
-        const cellLines = (row[colIndex] || '').split('\n')
-        return Math.max(...cellLines.map(line => stripAnsi(line).length))
-      }))
-    )
-
-    // Print each row with proper padding, handling multi-line cells
-    for (let rowIndex = 0; rowIndex < data.length; rowIndex++) {
-      const row = data[rowIndex]
-
-      // Split each cell by newlines to handle multi-line content
-      const cellLines = row.map(cell => (cell || '').split('\n'))
-      const maxLines = Math.max(...cellLines.map(lines => lines.length))
-
-      // Print each line of this row
-      for (let lineIndex = 0; lineIndex < maxLines; lineIndex++) {
-        const formatted = cellLines.map((lines, colIndex) => {
-          const line = lines[lineIndex] || ''
-          const stripped = stripAnsi(line)
-          const padding = colWidths[colIndex] - stripped.length
-          return line + ' '.repeat(padding)
+      const note = get(service, 'notes', '')
+        .split('\n')
+        .map((line: string) => {
+          if (line.startsWith('    ')) {
+            return chalk.cyan(line)
+          } else {
+            return line
+          }
         })
-        process.stdout.write(formatted.join('  ') + '\n')
-      }
-    }
+        .join('\n')
+        .trim()
+
+      table.push([service.name, note])
+    })
+
+    this.log(table.toString())
   }
 }

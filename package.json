@@ -49,6 +49,7 @@
     "@oclif/core": "^4.8.0",
     "bluebird": "^3.7.2",
     "chalk": "4",
+    "cli-table3": "^0.6.5",
     "concurrently": "^5.0.2",
     "cosmiconfig": "8",
     "deepmerge": "^4.2.2",
