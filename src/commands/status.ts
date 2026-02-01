@@ -18,6 +18,10 @@ export default class Status extends BaseCommand {
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(Status)
 
+    // Display version
+    const packageJson = require('../../package.json')
+    this.log(`devctl v${packageJson.version}\n`)
+
     const services = get(this.projectConfig, 'current.services', [])
 
     if (services.length === 0) {
