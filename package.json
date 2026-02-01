@@ -44,7 +44,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "@cipherstash/gluegun": "^5.1.2",
     "@expo/spawn-async": "^1.7.0",
     "@google-cloud/secret-manager": "^4.2.1",
     "@oclif/core": "^4.8.0",
@@ -55,6 +54,7 @@
     "deepmerge": "^4.2.2",
     "dockerode": "^3.0.2",
     "dotenv": "^16.0.3",
+    "ejs": "^4.0.1",
     "get-port": "^5.0.0",
     "inquirer": "^13.2.2",
     "js-yaml": "^3.13.1",
@@ -66,6 +66,7 @@
   "devDependencies": {
     "@oclif/test": "^4.1.16",
     "@types/bluebird": "^3.5.38",
+    "@types/ejs": "^3.1.5",
     "@types/inquirer": "^9.0.9",
     "@types/jest": "^30.0.0",
     "@types/js-yaml": "^4.0.9",

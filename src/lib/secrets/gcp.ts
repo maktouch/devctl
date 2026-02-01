@@ -4,7 +4,7 @@ import { SecretsProvider } from '../../types/secrets.js';
 import Bluebird from 'bluebird';
 import { parse } from "dotenv";
 import deepmerge from 'deepmerge';
-import { filesystem } from '@cipherstash/gluegun';
+import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
 
 interface GCPSecretsConfig extends SecretsConfig {
@@ -111,7 +111,7 @@ class GCPSecretsProvider extends SecretsProvider {
           continue;
         }
 
-        filesystem.write(resolve(cwd, path), secret);
+        await writeFile(resolve(cwd || '.', path), secret);
       }
     }
 
@@ -136,7 +136,7 @@ class GCPSecretsProvider extends SecretsProvider {
           continue;
         }
 
-        filesystem.write(resolve(cwd, path), secret);
+        await writeFile(resolve(cwd || '.', path), secret);
       }
     }
   }

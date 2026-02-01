@@ -11,10 +11,17 @@ DevCTL is a CLI app designed to:
 
 ## Requirements
 
-- Node 16+
-- NPM or Yarn
+- Node 16.18.1+
+- pnpm (recommended) or npm
 - Docker
-- Docker-Compose
+- Docker Compose V2
+
+## Technology Stack
+
+- **TypeScript 5.9** - Modern, type-safe development
+- **oclif 4** - Industry-standard CLI framework
+- **pnpm** - Fast, efficient package manager
+- **Docker Compose V2** - Container orchestration
 
 ## What DevCTL is useful for
 
@@ -33,8 +40,43 @@ DevCTL decreases the onboarding time of new devs in any of our projects at Split
 
 ## Getting Started
 
-- `yarn global add @splitmedialabs/devctl` (or `npm install -g @splitmedialabs/devctl`)
-- Check examples
+```bash
+# Install globally
+pnpm add -g @splitmedialabs/devctl
+# or
+npm install -g @splitmedialabs/devctl
+
+# Initialize a new project
+devctl init
+
+# Switch services and start
+devctl switch
+
+# View available commands
+devctl --help
+```
+
+## Available Commands
+
+- `devctl init` - Initialize a new devctl project with database presets
+- `devctl switch` - Interactively select services and environment, then start
+- `devctl up` - Start selected services
+- `devctl down` - Stop and remove containers
+- `devctl status` - View current configuration
+- `devctl logs` - View container logs
+- `devctl exec` - Execute commands in running containers
+- `devctl run` - Run one-off commands
+- `devctl secrets` - Pull secrets from configured providers
+- `devctl compile` - Generate docker-compose.yaml (advanced)
+
+## Development
+
+This project is built with:
+- TypeScript 5.9 for type safety
+- oclif for modern CLI architecture
+- pnpm for efficient package management
+
+See [MIGRATION.md](./MIGRATION.md) for details on the modern architecture.
 
 ## Docs:
 
