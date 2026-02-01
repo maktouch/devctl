@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import get from 'lodash/get'
 import chalk from 'chalk'
+import stripAnsi from 'strip-ansi'
 import {BaseCommand} from '../base-command'
 
 export default class Status extends BaseCommand {
@@ -49,13 +50,18 @@ export default class Status extends BaseCommand {
   }
 
   private printTable(data: string[][]): void {
-    // Simple table printer (lean format)
+    // Calculate column widths by stripping ANSI codes
     const colWidths = data[0].map((_, colIndex) =>
-      Math.max(...data.map(row => (row[colIndex] || '').length))
+      Math.max(...data.map(row => stripAnsi(row[colIndex] || '').length))
     )
 
+    // Print each row with proper padding
     for (const row of data) {
-      const formatted = row.map((cell, i) => cell.padEnd(colWidths[i]))
+      const formatted = row.map((cell, i) => {
+        const stripped = stripAnsi(cell)
+        const padding = colWidths[i] - stripped.length
+        return cell + ' '.repeat(padding)
+      })
       this.log(formatted.join('  '))
     }
   }

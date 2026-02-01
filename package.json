@@ -59,7 +59,8 @@
     "lodash": "^4.17.15",
     "mustache": "^4.2.0",
     "node_modules-path": "^2.0.5",
-    "oclif": "^4.22.71"
+    "oclif": "^4.22.71",
+    "strip-ansi": "^7.1.2"
   },
   "devDependencies": {
     "@oclif/test": "^4.1.16",
