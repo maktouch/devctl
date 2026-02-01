@@ -8,3 +8,9 @@ dist
 build
 yarn-error.log
 *.code-workspace
+tsconfig.tsbuildinfo
+oclif.manifest.json
+
+# pnpm
+pnpm-lock.yaml
+.pnpm-debug.log

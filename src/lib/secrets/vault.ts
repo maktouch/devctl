@@ -7,7 +7,7 @@ import { SecretsProvider } from '../../types/secrets.js';
 import Bluebird from 'bluebird';
 import deepmerge from 'deepmerge';
 import { resolve } from 'path';
-import { filesystem } from '@cipherstash/gluegun';
+import { writeFile } from 'fs/promises';
 import spawnAsync from "@expo/spawn-async";
 
 interface VaultSecretsConfig extends SecretsConfig {
@@ -120,7 +120,7 @@ class VaultSecretsProvider extends SecretsProvider {
           env: { ...process.env, VAULT_ADDR: this.endpoint }
         });
 
-        filesystem.write(resolve(cwd, path), stdout);
+        await writeFile(resolve(cwd || '.', path), stdout);
       }
     }
 
@@ -139,7 +139,7 @@ class VaultSecretsProvider extends SecretsProvider {
           env: { ...process.env, VAULT_ADDR: this.endpoint }
         });
 
-        filesystem.write(resolve(cwd, path), stdout);
+        await writeFile(resolve(cwd || '.', path), stdout);
       }
     }
   }

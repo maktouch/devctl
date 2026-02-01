@@ -1,6 +1,21 @@
-module.exports = {
+interface DatabaseEnvField {
+  name: string
+  message: string
+  initial: string
+}
+
+interface DatabaseConfig {
+  versions: string[]
+  default: {
+    defaultPort: number
+    defaultMount: string
+  }
+  env: DatabaseEnvField[]
+}
+
+export const databases: Record<string, DatabaseConfig> = {
   mongo: {
-    versions: ['3.4-xenial', '3.6-xenial', '4.0-xenial'],
+    versions: ['3.4-xenial', '3.6-xenial', '4.0-xenial', '5.0', '6.0', '7.0'],
     default: {
       defaultPort: 27017,
       defaultMount: '/data/db',
@@ -19,7 +34,7 @@ module.exports = {
     ],
   },
   mysql: {
-    versions: ['5.6', '5.7', '8.0'],
+    versions: ['5.6', '5.7', '8.0', '8.4', '9.0'],
     default: {
       defaultPort: 3306,
       defaultMount: '/var/lib/mysql',
@@ -48,13 +63,7 @@ module.exports = {
     ],
   },
   postgres: {
-    versions: [
-      '9.4-alpine',
-      '9.5-alpine',
-      '9.6-alpine',
-      '10-alpine',
-      '11-alpine',
-    ],
+    versions: ['12-alpine', '13-alpine', '14-alpine', '15-alpine', '16-alpine', '17-alpine'],
     default: {
       defaultPort: 5432,
       defaultMount: '/var/lib/postgresql/data',
@@ -77,13 +86,12 @@ module.exports = {
       },
     ],
   },
-
   redis: {
-    versions: ['4.0-alpine', '5.0-alpine'],
+    versions: ['6-alpine', '7-alpine'],
     default: {
       defaultPort: 6379,
       defaultMount: '/data',
     },
     env: [],
   },
-};
+}
