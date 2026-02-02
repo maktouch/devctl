@@ -1,5 +1,5 @@
 module.exports = {
-  parser: 'babel-eslint',
+  parser: '@typescript-eslint/parser',
   env: {
     es6: true,
     node: true,
@@ -7,16 +7,13 @@ module.exports = {
   },
   extends: ['prettier', 'eslint:recommended', 'plugin:@typescript-eslint/recommended'],
   parserOptions: {
-    ecmaVersion: 7,
+    ecmaVersion: 2020,
     sourceType: 'module',
-    ecmaFeatures: {
-      experimentalObjectRestSpread: true,
-      impliedStrict: true,
-    },
   },
-  plugins: ['prettier'],
+  plugins: ['prettier', '@typescript-eslint'],
   rules: {
-    'no-unused-vars': [
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': [
       'error',
       {
         vars: 'all',
