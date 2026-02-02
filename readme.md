@@ -78,8 +78,13 @@ This project is built with:
 
 See [MIGRATION.md](./MIGRATION.md) for details on the modern architecture.
 
-## Docs:
+## Documentation
 
-Traditional docs are non-existent 😔 instead, they're all in working examples in the [examples](./examples) folder. Don't worry though, they are quite comprehensive! We do, however, have a [reference](./docs/readme.md)
+### Guides
 
-Clone this repository, and start with [examples/example-basic-react-prisma-mysql/readme.md](./examples/example-basic-react-prisma-mysql/readme.md)
+- [HTTPS Proxy Setup](./docs/https-proxy.md) - Complete guide to setting up local HTTPS development with the DevCTL proxy
+
+### References
+
+- [Configuration Reference](./docs/readme.md) - `.devctl.yaml` and `.devconfig.yaml` documentation
+- [Migration Guide](./MIGRATION.md) - Details on the modern TypeScript architecture
