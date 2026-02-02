@@ -1,5 +1,5 @@
 {
-  "name": "@splitmedialabs/devctl-proxy",
+  "name": "@maktouch/devctl-proxy",
   "version": "1.0.0",
   "description": "Simple reverse-proxy for devctl",
   "main": "index.js",
