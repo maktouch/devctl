@@ -10,6 +10,12 @@ export interface EnvironmentConfigEntry {
   description: string;
 }
 
+export interface CommandConfigEntry {
+  name: string;
+  description?: string;
+  handler: string;
+}
+
 export type SecretsConfig = any;
 
 export type Secret = {
@@ -52,6 +58,7 @@ export interface DevctlConfig {
   services?: ServicesConfigEntry[] | {[key: string]: ServicesConfigEntry};
   secrets?: SecretsProviderEntry[];
   environment?: EnvironmentConfigEntry[] | {[key: string]: EnvironmentConfigEntry};
+  commands?: CommandConfigEntry[];
   current?: Partial<DevctlCurrent>;
   compiledSecrets?: any;
   cwd?: string;

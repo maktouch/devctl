@@ -25,6 +25,9 @@
     "dirname": "devctl",
     "commands": "./dist/commands",
     "plugins": [],
+    "hooks": {
+      "command_not_found": "./dist/hooks/command_not_found"
+    },
     "topicSeparator": " ",
     "topics": {}
   },
