@@ -1,8 +1,9 @@
 import {Errors, Hook} from '@oclif/core'
 import {spawn} from 'child_process'
 import {constants} from 'fs'
-import {access} from 'fs/promises'
-import {isAbsolute, resolve} from 'path'
+import {access, stat} from 'fs/promises'
+import {extname, isAbsolute, join, resolve} from 'path'
+import {pathToFileURL} from 'url'
 import {getProjectConfig} from '../lib/config'
 
 async function fileExists(path: string): Promise<boolean> {
@@ -21,6 +22,52 @@ async function isExecutable(path: string): Promise<boolean> {
   } catch {
     return false
   }
+}
+
+async function resolveHandlerFile(
+  handler: string,
+  cwd: string,
+  commandName: string
+): Promise<{path: string; exists: boolean; isModule: boolean}> {
+  const resolved = isAbsolute(handler) ? handler : resolve(cwd, handler)
+  if (!(await fileExists(resolved))) {
+    return {path: resolved, exists: false, isModule: false}
+  }
+
+  const info = await stat(resolved)
+  if (info.isDirectory()) {
+    const candidates = ['index.js', 'index.cjs', 'index.mjs']
+    for (const candidate of candidates) {
+      const path = join(resolved, candidate)
+      if (await fileExists(path)) {
+        return {path, exists: true, isModule: true}
+      }
+    }
+
+    throw new Errors.CLIError(
+      `Custom command "${commandName}" handler directory missing index.js`
+    )
+  }
+
+  const isModule = ['.js', '.cjs', '.mjs'].includes(extname(resolved))
+  return {path: resolved, exists: true, isModule}
+}
+
+async function loadModuleHandler(
+  handlerPath: string,
+  commandName: string
+): Promise<(payload: Record<string, unknown>) => Promise<void>> {
+  const moduleUrl = pathToFileURL(handlerPath).href
+  const loaded = await import(moduleUrl)
+  const handler = (loaded as {default?: unknown}).default ?? loaded
+
+  if (typeof handler !== 'function') {
+    throw new Errors.CLIError(
+      `Custom command "${commandName}" handler must export a function`
+    )
+  }
+
+  return handler as (payload: Record<string, unknown>) => Promise<void>
 }
 
 async function runProcess(
@@ -72,24 +119,37 @@ const hook: Hook<'command_not_found'> = async opts => {
   const rawArgs = opts.argv ?? []
   const args = rawArgs[0] === id ? rawArgs.slice(1) : rawArgs
 
-  const resolvedHandler = isAbsolute(entry.handler) ? entry.handler : resolve(cwd, entry.handler)
-  const handlerExists = await fileExists(resolvedHandler)
+  const resolvedHandler = await resolveHandlerFile(entry.handler, cwd, id)
 
-  if (!handlerExists) {
+  if (!resolvedHandler.exists) {
     if (entry.handler.includes('/') || entry.handler.startsWith('.')) {
-      throw new Errors.CLIError(`Custom command "${id}" handler not found at ${resolvedHandler}`)
+      throw new Errors.CLIError(
+        `Custom command "${id}" handler not found at ${resolvedHandler.path}`
+      )
     }
 
     await runProcess(entry.handler, args, cwd, id)
     return
   }
 
-  if (await isExecutable(resolvedHandler)) {
-    await runProcess(resolvedHandler, args, cwd, id)
+  if (await isExecutable(resolvedHandler.path)) {
+    await runProcess(resolvedHandler.path, args, cwd, id)
     return
   }
 
-  await runProcess('sh', [resolvedHandler, ...args], cwd, id)
+  if (resolvedHandler.isModule) {
+    const handler = await loadModuleHandler(resolvedHandler.path, id)
+    await handler({
+      args,
+      argv: rawArgs,
+      command: id,
+      cwd,
+      project,
+    })
+    return
+  }
+
+  await runProcess('sh', [resolvedHandler.path, ...args], cwd, id)
 }
 
 export default hook
