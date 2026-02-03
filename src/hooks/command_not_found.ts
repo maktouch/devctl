@@ -4,6 +4,7 @@ import {constants} from 'fs'
 import {access, stat} from 'fs/promises'
 import {extname, isAbsolute, join, resolve} from 'path'
 import {pathToFileURL} from 'url'
+import {createRequire} from 'module'
 import {getProjectConfig} from '../lib/config'
 
 async function fileExists(path: string): Promise<boolean> {
@@ -57,8 +58,20 @@ async function loadModuleHandler(
   handlerPath: string,
   commandName: string
 ): Promise<(payload: Record<string, unknown>) => Promise<void>> {
-  const moduleUrl = pathToFileURL(handlerPath).href
-  const loaded = await import(moduleUrl)
+  const requireFromHere = createRequire(__filename)
+  let loaded: unknown
+
+  try {
+    loaded = requireFromHere(handlerPath)
+  } catch (error: any) {
+    if (error?.code !== 'ERR_REQUIRE_ESM') {
+      throw error
+    }
+
+    const moduleUrl = pathToFileURL(handlerPath).href
+    loaded = await import(moduleUrl)
+  }
+
   const handler = (loaded as {default?: unknown}).default ?? loaded
 
   if (typeof handler !== 'function') {
