@@ -146,7 +146,21 @@ const hook: Hook<'command_not_found'> = async opts => {
 
   const project = await getProjectConfig()
   const commands = project?.commands ?? []
-  const entry = commands.find(command => command.name === id)
+
+  // oclif with topicSeparator=" " converts "secrets node-api" into "secrets:node-api".
+  // Try exact match first, then fall back to matching just the first segment.
+  let entry = commands.find(command => command.name === id)
+  let commandName = id
+  let extraArgs: string[] = []
+
+  if (!entry && id.includes(':')) {
+    const [first, ...rest] = id.split(':')
+    entry = commands.find(command => command.name === first)
+    if (entry) {
+      commandName = first
+      extraArgs = rest
+    }
+  }
 
   if (!entry) {
     throw new Errors.CLIError(`command ${id} not found`)
@@ -154,40 +168,46 @@ const hook: Hook<'command_not_found'> = async opts => {
 
   const cwd = project?.cwd ?? process.cwd()
   const rawArgs = opts.argv ?? []
-  const args = rawArgs[0] === id ? rawArgs.slice(1) : rawArgs
+  const args = [...extraArgs, ...rawArgs]
 
-  const resolvedHandler = await resolveHandlerFile(entry.handler, cwd, id)
+  const resolvedHandler = await resolveHandlerFile(entry.handler, cwd, commandName)
 
   if (!resolvedHandler.exists) {
     if (entry.handler.includes('/') || entry.handler.startsWith('.')) {
       throw new Errors.CLIError(
-        `Custom command "${id}" handler not found at ${resolvedHandler.path}`
+        `Custom command "${commandName}" handler not found at ${resolvedHandler.path}`
       )
     }
 
-    await runProcess(entry.handler, args, cwd, id)
+    await runProcess(entry.handler, args, cwd, commandName)
     return
   }
 
   if (await isExecutable(resolvedHandler.path)) {
-    await runProcess(resolvedHandler.path, args, cwd, id)
+    await runProcess(resolvedHandler.path, args, cwd, commandName)
     return
   }
 
   if (resolvedHandler.isModule) {
-    const handler = await loadModuleHandler(resolvedHandler.path, id)
+    const handler = await loadModuleHandler(resolvedHandler.path, commandName)
     await handler({
       args,
       argv: rawArgs,
-      command: id,
+      command: commandName,
       cwd,
       config: project,
       project,
+      // Backwards compatibility with gluegun-based custom commands (v3.x)
+      parameters: {
+        first: args[0],
+        second: args[1],
+        array: [commandName, ...args],
+      },
     })
     return
   }
 
-  await runProcess('sh', [resolvedHandler.path, ...args], cwd, id)
+  await runProcess('sh', [resolvedHandler.path, ...args], cwd, commandName)
 }
 
 export default hook
