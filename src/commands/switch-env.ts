@@ -81,7 +81,6 @@ export default class SwitchEnv extends BaseCommand {
 
     await writeFile(project.paths!.current, YAML.dump(currentConfig))
 
-    await this.runCommand('pull-secrets', [])
     await this.runCommand('compile', [])
   }
 }

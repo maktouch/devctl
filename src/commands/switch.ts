@@ -13,7 +13,6 @@ export default class Switch extends BaseCommand {
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(Switch)
 
-    await this.runCommand('pull-secrets', [])
     await this.runCommand('switch-current', [])
     await this.runCommand('compile', [])
     await this.runCommand('up', [])

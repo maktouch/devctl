@@ -16,35 +16,6 @@ export interface CommandConfigEntry {
   handler: string;
 }
 
-export type SecretsConfig = any;
-
-export type Secret = {
-  name: string;
-  key: string;
-}
-
-export type SecretFile = {
-  key: string;
-  path: string;
-}
-
-export interface SecretsEntries {
-  default?: Secret[];
-  [environment: string]: Secret[];
-}
-
-export interface SecretsFiles {
-  [environment: string]: SecretFile[];
-}
-
-export interface SecretsProviderEntry {
-  prefix: string;
-  provider?: string;
-  config: SecretsConfig;
-  entries: SecretsEntries;
-  files: SecretsFiles;
-}
-
 export interface DevctlCurrent {
   services: string[];
   environment: string;
@@ -56,11 +27,9 @@ export interface DevctlCurrent {
 
 export interface DevctlConfig {
   services?: ServicesConfigEntry[] | {[key: string]: ServicesConfigEntry};
-  secrets?: SecretsProviderEntry[];
   environment?: EnvironmentConfigEntry[] | {[key: string]: EnvironmentConfigEntry};
   commands?: CommandConfigEntry[];
   current?: Partial<DevctlCurrent>;
-  compiledSecrets?: any;
   cwd?: string;
   paths?: {
     [key: string]: string;

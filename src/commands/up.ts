@@ -7,7 +7,6 @@ import {
   writeComposeFileToHomeDir,
 } from '../utils/dockerCompose'
 import {readScripts, runScripts} from '../utils/runScripts'
-import {existsSync} from 'fs'
 
 export default class Up extends BaseCommand {
   static description = 'Builds, creates, starts, and attaches to containers for a service'
@@ -22,7 +21,6 @@ export default class Up extends BaseCommand {
     const {args, flags} = await this.parse(Up)
 
     const compose = get(this.projectConfig, 'paths.compose')
-    const secrets = get(this.projectConfig, 'paths.secrets')
     const scriptsPath = get(this.projectConfig, 'paths.scripts')
     const allScripts = await readScripts(scriptsPath)
 
@@ -38,11 +36,6 @@ export default class Up extends BaseCommand {
 
     // Shut down first
     await this.runCommand('down', [])
-
-    // If secrets exist in the config, pull them
-    if (secrets && existsSync(secrets)) {
-      await this.runCommand('pull-secrets', [])
-    }
 
     // Write compose file path to home directory for tracking
     await writeComposeFileToHomeDir(compose)
