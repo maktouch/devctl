@@ -2,9 +2,9 @@ import {Errors, Hook} from '@oclif/core'
 import {spawn} from 'child_process'
 import {constants} from 'fs'
 import {access, stat} from 'fs/promises'
+import {createRequire} from 'module'
 import {extname, isAbsolute, join, resolve} from 'path'
 import {pathToFileURL} from 'url'
-import {createRequire} from 'module'
 import {getProjectConfig} from '../lib/config'
 
 async function fileExists(path: string): Promise<boolean> {
