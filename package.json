@@ -1,6 +1,6 @@
 {
   "name": "@maktouch/devctl",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "contributors": [
     "Makara Sok",
     "Enrico Suarez",
@@ -24,6 +24,7 @@
     "bin": "devctl",
     "dirname": "devctl",
     "commands": "./dist/commands",
+    "helpClass": "./dist/help/custom-help",
     "plugins": [],
     "hooks": {
       "command_not_found": "./dist/hooks/command_not_found"
