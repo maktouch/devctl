@@ -1,10 +1,9 @@
 import {Errors, Hook} from '@oclif/core'
+import {buildSync} from 'esbuild'
 import {spawn} from 'child_process'
 import {constants} from 'fs'
 import {access, stat} from 'fs/promises'
-import {createRequire} from 'module'
 import {extname, isAbsolute, join, resolve} from 'path'
-import {pathToFileURL} from 'url'
 import {getProjectConfig} from '../lib/config'
 
 async function fileExists(path: string): Promise<boolean> {
@@ -46,7 +45,7 @@ async function resolveHandlerFile(
     }
 
     throw new Errors.CLIError(
-      `Custom command "${commandName}" handler directory missing index.js`
+      `Custom command "${commandName}" handler directory missing index file`
     )
   }
 
@@ -54,51 +53,47 @@ async function resolveHandlerFile(
   return {path: resolved, exists: true, isModule}
 }
 
-function ensureTypescriptLoader(requires: NodeRequire[]): void {
-  const candidates = ['tsx/require', 'tsx/register', 'ts-node/register/transpile-only', 'ts-node/register']
-
-  for (const candidate of candidates) {
-    for (const requireFn of requires) {
-      try {
-        requireFn(candidate)
-        return
-      } catch {
-        // Try next option.
-      }
-    }
-  }
-
-  throw new Errors.CLIError(
-    'TypeScript custom commands require `tsx` or `ts-node` to be installed.'
-  )
-}
-
 function isTypescriptFile(handlerPath: string): boolean {
   return ['.ts', '.cts', '.mts'].includes(extname(handlerPath))
+}
+
+function compileTypescript(handlerPath: string): string {
+  const result = buildSync({
+    entryPoints: [handlerPath],
+    bundle: false,
+    write: false,
+    platform: 'node',
+    format: 'cjs',
+    target: 'node16',
+    loader: {'.ts': 'ts', '.cts': 'ts', '.mts': 'ts'},
+  })
+
+  return result.outputFiles[0].text
 }
 
 async function loadModuleHandler(
   handlerPath: string,
   commandName: string,
-  cwd: string
 ): Promise<(payload: Record<string, unknown>) => Promise<void>> {
-  const requireFromHere = createRequire(__filename)
-  const requireFromProject = createRequire(resolve(cwd, 'package.json'))
   let loaded: unknown
 
   if (isTypescriptFile(handlerPath)) {
-    ensureTypescriptLoader([requireFromProject, requireFromHere])
-  }
+    const code = compileTypescript(handlerPath)
+    const module = {exports: {} as Record<string, unknown>}
+    const fn = new Function('require', 'module', 'exports', '__filename', '__dirname', code)
+    fn(require, module, module.exports, handlerPath, resolve(handlerPath, '..'))
+    loaded = module.exports
+  } else {
+    try {
+      loaded = require(handlerPath)
+    } catch (error: any) {
+      if (error?.code !== 'ERR_REQUIRE_ESM') {
+        throw error
+      }
 
-  try {
-    loaded = requireFromHere(handlerPath)
-  } catch (error: any) {
-    if (error?.code !== 'ERR_REQUIRE_ESM') {
-      throw error
+      const {pathToFileURL} = await import('url')
+      loaded = await import(pathToFileURL(handlerPath).href)
     }
-
-    const moduleUrl = pathToFileURL(handlerPath).href
-    loaded = await import(moduleUrl)
   }
 
   const handler = (loaded as {default?: unknown}).default ?? loaded
@@ -180,7 +175,7 @@ const hook: Hook<'command_not_found'> = async opts => {
   }
 
   if (resolvedHandler.isModule) {
-    const handler = await loadModuleHandler(resolvedHandler.path, id, cwd)
+    const handler = await loadModuleHandler(resolvedHandler.path, id)
     await handler({
       args,
       argv: rawArgs,

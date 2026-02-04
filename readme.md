@@ -72,7 +72,7 @@ devctl --help
 ## Custom Commands (TypeScript Example)
 
 Define a custom command in `.devctl.yaml` and implement the handler in TypeScript.
-TypeScript handlers require `tsx` or `ts-node` installed in the project.
+TypeScript handlers are compiled on the fly using esbuild — no extra dependencies needed in your project.
 
 ```yaml
 # .devctl.yaml
