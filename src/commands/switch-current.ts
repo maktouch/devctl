@@ -47,7 +47,7 @@ export default class SwitchCurrent extends BaseCommand {
         name: 'services',
         message: 'Which services do you want to work on?',
         choices: choices.map(c => ({
-          name: c.description ? `${c.name} - ${c.description}` : c.name,
+          name: c.name,
           value: c.value,
           checked: initial.includes(c.value),
         })),
