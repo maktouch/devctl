@@ -20,7 +20,6 @@ export abstract class BaseCommand extends Command {
   async runCommand(commandName: string, args: string[] = []): Promise<void> {
     // Map command names to file names
     const commandMap: Record<string, string> = {
-      'pull-secrets': 'secrets',
       'switch-current': 'switch-current',
       'compile': 'compile',
       'up': 'up',

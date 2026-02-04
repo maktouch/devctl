@@ -27,7 +27,6 @@ export async function getProjectConfig(): Promise<DevctlConfig | null> {
     compose: resolve(cwd, '.devctl-docker-compose.yaml'),
     current: resolve(cwd, '.devctl-current.yaml'),
     scripts: resolve(cwd, '.devctl-scripts.yaml'),
-    secrets: resolve(cwd, '.devctl-secrets.yaml'),
   }
 
   const project = search.config as DevctlConfig
@@ -40,12 +39,6 @@ export async function getProjectConfig(): Promise<DevctlConfig | null> {
     project.current = await readYaml(paths.current)
   } catch (err) {
     project.current = {}
-  }
-
-  try {
-    project.compiledSecrets = await readYaml(paths.secrets)
-  } catch (err) {
-    project.compiledSecrets = {}
   }
 
   return project
