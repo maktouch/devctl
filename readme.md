@@ -69,6 +69,32 @@ devctl --help
 - `devctl secrets` - Pull secrets from configured providers
 - `devctl compile` - Generate docker-compose.yaml (advanced)
 
+## Custom Commands (TypeScript Example)
+
+Define a custom command in `.devctl.yaml` and implement the handler in TypeScript.
+TypeScript handlers require `tsx` or `ts-node` installed in the project.
+
+```yaml
+# .devctl.yaml
+commands:
+  - name: setup-ssl
+    description: Generate local SSL certificates using mkcert
+    handler: .devctl/commands/setup-ssl
+```
+
+```ts
+// .devctl/commands/setup-ssl/index.ts
+import type { CustomCommandPayload } from "@maktouch/devctl";
+
+export default async function setupSsl(payload: CustomCommandPayload) {
+  const { projectRoot, config, args } = payload;
+
+  console.log("Project root:", projectRoot);
+  console.log("Has config:", Boolean(config));
+  console.log("Args:", args);
+}
+```
+
 ## Development
 
 This project is built with:
