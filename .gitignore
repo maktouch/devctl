@@ -12,5 +12,4 @@ tsconfig.tsbuildinfo
 oclif.manifest.json
 
 # pnpm
-pnpm-lock.yaml
 .pnpm-debug.log
