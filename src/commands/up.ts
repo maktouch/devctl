@@ -4,7 +4,8 @@ import chalk from 'chalk'
 import {BaseCommand} from '../base-command'
 import {
   createDockerComposeCommand,
-  writeComposeFileToHomeDir,
+  writeCurrentState,
+  getComposeContainerIds,
 } from '../utils/dockerCompose'
 import {readScripts, runScripts} from '../utils/runScripts'
 
@@ -34,11 +35,8 @@ export default class Up extends BaseCommand {
 
     await runScripts(allScripts, 'afterSwitch', false)
 
-    // Shut down first
-    await this.runCommand('down', [])
-
-    // Write compose file path to home directory for tracking
-    await writeComposeFileToHomeDir(compose)
+    // Shut down first (force to skip prompts during automated flow)
+    await this.runCommand('down', ['--force'])
 
     const exec = createDockerComposeCommand(compose)
 
@@ -47,6 +45,10 @@ export default class Up extends BaseCommand {
       msg: `Starting docker containers ${chalk.gray('(This might take a while the first time)')}`,
       cmd: 'up -d',
     })
+
+    // Capture container IDs and write state for tracking
+    const containers = await getComposeContainerIds(compose)
+    await writeCurrentState({composePath: compose, containers})
 
     // Show status
     await this.runCommand('status', [])
