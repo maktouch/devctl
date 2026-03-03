@@ -4,10 +4,11 @@ import inquirer from 'inquirer'
 import {BaseCommand} from '../base-command'
 import {
   createDockerComposeCommand,
-  getLastState,
+  getAllStates,
   composeFileExists,
   forceRemoveContainers,
   clearCurrentState,
+  removeStateByComposePath,
 } from '../utils/dockerCompose'
 
 export default class Down extends BaseCommand {
@@ -32,25 +33,24 @@ export default class Down extends BaseCommand {
     const {flags} = await this.parse(Down)
     const currentCompose = get(this.projectConfig, 'paths.compose') as string | undefined
 
-    // Handle previous instances from ~/.devctl-current
-    const lastState = await getLastState()
+    const states = await getAllStates()
 
-    if (lastState) {
-      const isSameProject = currentCompose && lastState.composePath === currentCompose
-      const shouldSkip = flags.this && !isSameProject
+    if (states.length > 0) {
+      for (const state of states) {
+        const isSameProject = currentCompose && state.composePath === currentCompose
+        const shouldSkip = flags.this && !isSameProject
 
-      if (!shouldSkip) {
-        const exists = await composeFileExists(lastState.composePath)
+        if (shouldSkip) continue
+
+        const exists = await composeFileExists(state.composePath)
 
         if (exists) {
-          // Normal path: compose file exists, use docker compose down
-          const exec = createDockerComposeCommand(lastState.composePath)
+          const exec = createDockerComposeCommand(state.composePath)
           await exec({
-            msg: 'Shutting down previous instances',
+            msg: `Shutting down ${state.composePath}`,
             cmd: 'down --remove-orphans',
           })
-        } else if (lastState.containers.length > 0) {
-          // Stale path: compose file was deleted, but we have tracked container IDs
+        } else if (state.containers.length > 0) {
           let shouldDestroy = flags.force
 
           if (!shouldDestroy) {
@@ -58,7 +58,7 @@ export default class Down extends BaseCommand {
               {
                 type: 'confirm',
                 name: 'confirm',
-                message: `The project at ${lastState.composePath} no longer exists. Destroy its docker containers?`,
+                message: `The project at ${state.composePath} no longer exists. Destroy its docker containers?`,
                 default: true,
               },
             ])
@@ -67,17 +67,17 @@ export default class Down extends BaseCommand {
 
           if (shouldDestroy) {
             console.log('Removing orphaned containers...')
-            await forceRemoveContainers(lastState.containers)
+            await forceRemoveContainers(state.containers)
           }
         }
-      }
 
-      await clearCurrentState()
+        await removeStateByComposePath(state.composePath)
+      }
     }
 
     // Shut down current project instances (if not already handled above)
     if (currentCompose) {
-      const alreadyHandled = lastState?.composePath === currentCompose
+      const alreadyHandled = states.some(s => s.composePath === currentCompose)
       if (!alreadyHandled) {
         const exists = await composeFileExists(currentCompose)
         if (exists) {

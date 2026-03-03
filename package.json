@@ -1,6 +1,6 @@
 {
   "name": "@maktouch/devctl",
-  "version": "6.0.0",
+  "version": "7.0.0",
   "contributors": [
     "Makara Sok",
     "Enrico Suarez",
@@ -30,7 +30,11 @@
       "command_not_found": "./dist/hooks/command_not_found"
     },
     "topicSeparator": " ",
-    "topics": {}
+    "topics": {
+      "proxy": {
+        "description": "Manage the local Caddy reverse proxy"
+      }
+    }
   },
   "files": [
     "src",

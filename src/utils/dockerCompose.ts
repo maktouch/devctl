@@ -1,51 +1,119 @@
 import {homedir} from 'os'
-import {resolve} from 'path'
-import {readFile, writeFile, access, unlink} from 'fs/promises'
+import {resolve, dirname} from 'path'
+import {readFile, writeFile, access, unlink, rename, mkdir} from 'fs/promises'
 import {execSync} from 'child_process'
 import {exec} from 'child_process'
 import {promisify} from 'util'
 
 const execAsync = promisify(exec)
-const lastDCPath = resolve(homedir(), '.devctl-current')
+const legacyPath = resolve(homedir(), '.devctl-current')
+const configDir = resolve(homedir(), '.config', 'devctl')
+const currentStatePath = resolve(configDir, 'current')
 
 export interface DevctlCurrentState {
   composePath: string
   containers: string[]
 }
 
-export async function getLastState(): Promise<DevctlCurrentState | null> {
+/**
+ * Migrate legacy ~/.devctl-current to ~/.config/devctl/current if it exists.
+ */
+async function migrateConfig(): Promise<void> {
   try {
-    await access(lastDCPath)
-    const raw = (await readFile(lastDCPath, 'utf-8')).trim()
-    if (!raw) return null
+    await access(legacyPath)
+  } catch {
+    return // No legacy file, nothing to migrate
+  }
 
-    // Try parsing as JSON (new format)
+  try {
+    await mkdir(configDir, {recursive: true})
+    await rename(legacyPath, currentStatePath)
+    console.log(`Migrated ~/.devctl-current → ~/.config/devctl/current`)
+  } catch (err: any) {
+    console.warn('Warning: could not migrate config:', err.message)
+  }
+}
+
+/**
+ * Parse the state file, handling all legacy formats:
+ * - Plain text (old compose path)
+ * - Single JSON object (previous format)
+ * - JSON array (new multi-project format)
+ */
+async function readStateFile(): Promise<DevctlCurrentState[]> {
+  await migrateConfig()
+
+  try {
+    await access(currentStatePath)
+    const raw = (await readFile(currentStatePath, 'utf-8')).trim()
+    if (!raw) return []
+
     try {
       const parsed = JSON.parse(raw)
+
+      // New format: array
+      if (Array.isArray(parsed)) {
+        return parsed as DevctlCurrentState[]
+      }
+
+      // Previous format: single object
       if (parsed.composePath) {
-        return parsed as DevctlCurrentState
+        return [parsed as DevctlCurrentState]
       }
     } catch {
       // Not JSON — treat as legacy plain text (just a compose path)
     }
 
     // Legacy format: plain text compose path
-    return {
-      composePath: raw,
-      containers: [],
-    }
+    return [{composePath: raw, containers: []}]
   } catch {
-    return null
+    return []
   }
 }
 
+async function writeStateFile(states: DevctlCurrentState[]): Promise<void> {
+  await mkdir(configDir, {recursive: true})
+  await writeFile(currentStatePath, JSON.stringify(states, null, 2), 'utf-8')
+}
+
+export async function getAllStates(): Promise<DevctlCurrentState[]> {
+  return readStateFile()
+}
+
+export async function getLastState(): Promise<DevctlCurrentState | null> {
+  const states = await readStateFile()
+  return states.length > 0 ? states[0] : null
+}
+
+/**
+ * Replace all tracked state with a single project (non-merge behavior).
+ */
 export async function writeCurrentState(state: DevctlCurrentState): Promise<void> {
-  await writeFile(lastDCPath, JSON.stringify(state, null, 2), 'utf-8')
+  await writeStateFile([state])
+}
+
+/**
+ * Add a project to tracked state, deduping by composePath.
+ */
+export async function addCurrentState(state: DevctlCurrentState): Promise<void> {
+  const states = await readStateFile()
+  const filtered = states.filter(s => s.composePath !== state.composePath)
+  filtered.push(state)
+  await writeStateFile(filtered)
+}
+
+/**
+ * Remove a specific project from tracked state by its composePath.
+ */
+export async function removeStateByComposePath(composePath: string): Promise<void> {
+  const states = await readStateFile()
+  const filtered = states.filter(s => s.composePath !== composePath)
+  await writeStateFile(filtered)
 }
 
 export async function clearCurrentState(): Promise<void> {
   try {
-    await unlink(lastDCPath)
+    await unlink(currentStatePath)
   } catch {
     // File might not exist, that's fine
   }
