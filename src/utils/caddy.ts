@@ -1,7 +1,7 @@
 import {homedir} from 'os'
 import {resolve} from 'path'
 import {readFile, writeFile, readdir, unlink, mkdir} from 'fs/promises'
-import {exec} from 'child_process'
+import {exec, spawn} from 'child_process'
 import {promisify} from 'util'
 import * as http from 'http'
 
@@ -131,7 +131,34 @@ export async function startCaddy(): Promise<void> {
   await checkCaddyInstalled()
   await ensureDirectories()
   await generateMasterCaddyfile()
-  await execAsync(`caddy start --config ${MASTER_CADDYFILE}`)
+
+  const child = spawn('caddy', ['start', '--config', MASTER_CADDYFILE], {
+    detached: true,
+    stdio: 'ignore',
+  })
+  child.unref()
+
+  // Wait for Caddy to be ready (up to 5 seconds)
+  const deadline = Date.now() + 5000
+  while (Date.now() < deadline) {
+    if (await isCaddyRunning()) return
+    await new Promise(r => setTimeout(r, 250))
+  }
+
+  throw new Error('Caddy failed to start within 5 seconds.')
+}
+
+export async function checkPortInUse(port: number): Promise<string | null> {
+  try {
+    const {stdout} = await execAsync(`lsof -i :${port} -sTCP:LISTEN -P -n`)
+    const lines = stdout.trim().split('\n')
+    if (lines.length < 2) return null
+    // Parse the process name and PID from lsof output (COMMAND PID ...)
+    const parts = lines[1].split(/\s+/)
+    return `${parts[0]} (pid ${parts[1]})`
+  } catch {
+    return null
+  }
 }
 
 export async function stopCaddy(): Promise<void> {
