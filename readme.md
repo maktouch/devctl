@@ -59,9 +59,11 @@ devctl --help
 ## Available Commands
 
 - `devctl init` - Initialize a new devctl project with database presets
-- `devctl switch` - Interactively select services and environment, then start
-- `devctl up` - Start selected services
-- `devctl down` - Stop and remove containers
+- `devctl switch` - Interactively select services and environment, then start alongside other running projects
+- `devctl up` - Start selected services alongside other running projects
+- `devctl up --no-merge` - Stop other tracked projects before starting selected services
+- `devctl down` - Stop and remove containers for the current project
+- `devctl down --all` - Stop and remove containers for all tracked projects
 - `devctl status` - View current configuration
 - `devctl logs` - View container logs
 - `devctl exec` - Execute commands in running containers

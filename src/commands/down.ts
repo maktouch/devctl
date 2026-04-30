@@ -7,7 +7,6 @@ import {
   getAllStates,
   composeFileExists,
   forceRemoveContainers,
-  clearCurrentState,
   removeStateByComposePath,
 } from '../utils/dockerCompose'
 
@@ -17,8 +16,8 @@ export default class Down extends BaseCommand {
   static examples = ['<%= config.bin %> <%= command.id %>']
 
   static flags = {
-    this: Flags.boolean({
-      description: 'Only tear down containers belonging to the current project',
+    all: Flags.boolean({
+      description: 'Tear down all tracked devctl projects',
       default: false,
     }),
     force: Flags.boolean({
@@ -38,7 +37,7 @@ export default class Down extends BaseCommand {
     if (states.length > 0) {
       for (const state of states) {
         const isSameProject = currentCompose && state.composePath === currentCompose
-        const shouldSkip = flags.this && !isSameProject
+        const shouldSkip = !flags.all && !isSameProject
 
         if (shouldSkip) continue
 
