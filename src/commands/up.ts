@@ -1,4 +1,4 @@
-import {Args, Flags} from '@oclif/core'
+import {Flags} from '@oclif/core'
 import get from 'lodash/get'
 import chalk from 'chalk'
 import {BaseCommand} from '../base-command'
@@ -17,15 +17,16 @@ export default class Up extends BaseCommand {
 
   static flags = {
     merge: Flags.boolean({
+      allowNo: true,
       description: 'Keep other running devctl projects alive',
-      default: false,
+      default: true,
     }),
   }
 
   static args = {}
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(Up)
+    const {flags} = await this.parse(Up)
 
     const compose = get(this.projectConfig, 'paths.compose')
     const scriptsPath = get(this.projectConfig, 'paths.scripts')
@@ -35,7 +36,8 @@ export default class Up extends BaseCommand {
 
     if (!compose) {
       // If no compose file, run switch to generate one
-      await this.runCommand('switch', [])
+      const switchArgs = flags.merge ? [] : ['--no-merge']
+      await this.runCommand('switch', switchArgs)
       return
     }
 
@@ -45,7 +47,7 @@ export default class Up extends BaseCommand {
       // Merge mode: don't tear down other projects
     } else {
       // Shut down first (force to skip prompts during automated flow)
-      await this.runCommand('down', ['--force'])
+      await this.runCommand('down', ['--all', '--force'])
     }
 
     const exec = createDockerComposeCommand(compose)
