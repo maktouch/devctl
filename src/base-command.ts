@@ -1,12 +1,32 @@
 import {Command, Flags} from '@oclif/core'
-import {getProjectConfig} from './lib/config'
+import {getProjectConfig, FORCE_IN_WORKTREE_ENV} from './lib/config'
 import type {DevctlConfig} from './types/config'
 
 export abstract class BaseCommand extends Command {
+  static baseFlags = {
+    'force-in-worktree': Flags.boolean({
+      description: 'Run against this git worktree instead of redirecting to the main checkout',
+      default: false,
+    }),
+  }
+
   protected projectConfig!: DevctlConfig
 
   async init(): Promise<void> {
     await super.init()
+
+    // Base flags are parsed here (before the command's own parse) so the
+    // config loader knows about them. The env var lets nested runCommand()
+    // invocations inherit the choice without re-threading argv.
+    const {flags} = await this.parse({
+      flags: {},
+      baseFlags: (this.constructor as typeof BaseCommand).baseFlags,
+      args: {},
+      strict: false,
+    })
+    if (flags['force-in-worktree']) {
+      process.env[FORCE_IN_WORKTREE_ENV] = '1'
+    }
 
     // Load project configuration using the existing config loader
     const result = await getProjectConfig()
