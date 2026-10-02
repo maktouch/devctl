@@ -25,6 +25,8 @@ function searchConfig(from?: string) {
 export interface GetProjectConfigOptions {
   /** Run against the current worktree even when it is not the main checkout */
   forceInWorktree?: boolean
+  /** Suppress the stderr notice printed when redirecting to the main checkout */
+  quiet?: boolean
 }
 
 export async function getProjectConfig(options: GetProjectConfigOptions = {}): Promise<DevctlConfig | null> {
@@ -41,14 +43,14 @@ export async function getProjectConfig(options: GetProjectConfigOptions = {}): P
     if (info) {
       const mainSearch = await searchConfig(info.mainCheckout)
       if (mainSearch) {
-        process.stderr.write(
+        if (!options.quiet) process.stderr.write(
           chalk.yellow(
             `devctl: in worktree ${info.worktree}, using main checkout ${info.mainCheckout} ` +
               `(pass --force-in-worktree to stay here)\n`,
           ),
         )
         search = mainSearch
-      } else {
+      } else if (!options.quiet) {
         process.stderr.write(
           chalk.yellow(
             `devctl: in worktree ${info.worktree} but no devctl config found in main checkout ` +

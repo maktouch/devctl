@@ -81,6 +81,16 @@ If you really want an isolated stack for a worktree, pass `--force-in-worktree` 
 devctl switch --force-in-worktree
 ```
 
+### Custom commands in worktrees
+
+Custom commands (the `commands:` section of `.devctl.yaml`) are **not** redirected. They are per-checkout by nature: a `dev` command starts *this* worktree's dev servers, a `url` command prints *this* worktree's URL. devctl resolves the handler from the checkout you ran it in and executes it with that checkout as `cwd`. The handler receives that checkout's config as `config` / `project`, exactly as in devctl 7.
+
+Handlers that need the shared stack get it as an extra `shared` field on the payload. It is the main checkout's config when run from a worktree, and the same object as `config` otherwise.
+
+If the checkout you are in does not define the handler file (for example an older branch), devctl falls back to the main checkout's handler and `cwd`, and says so on stderr.
+
+`--force-in-worktree` is accepted by custom commands too. It is stripped before the remaining arguments reach the handler.
+
 ## Custom Commands (TypeScript Example)
 
 Define a custom command in `.devctl.yaml` and implement the handler in TypeScript.
