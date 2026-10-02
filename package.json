@@ -1,6 +1,6 @@
 {
   "name": "@maktouch/devctl",
-  "version": "8.0.0",
+  "version": "8.0.1",
   "contributors": [
     "Makara Sok",
     "Enrico Suarez",
@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "tsc -b",
+    "test": "pnpm run build && node --test \"test/**/*.test.js\"",
     "clean": "rimraf dist/",
     "dist": "tsc --sourceMap false",
     "prepare": "pnpm run clean && pnpm run dist",

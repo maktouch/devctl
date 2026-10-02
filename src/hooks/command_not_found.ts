@@ -4,7 +4,9 @@ import {spawn} from 'child_process'
 import {constants} from 'fs'
 import {access, stat} from 'fs/promises'
 import {extname, isAbsolute, join, resolve} from 'path'
-import {getProjectConfig} from '../lib/config'
+import chalk from 'chalk'
+import {getProjectConfig, FORCE_IN_WORKTREE_ENV} from '../lib/config'
+import {extractForceInWorktreeFlag, resolveCustomCommandLocation} from '../lib/custom-command'
 
 async function fileExists(path: string): Promise<boolean> {
   try {
@@ -144,8 +146,25 @@ const hook: Hook<'command_not_found'> = async opts => {
     throw new Errors.CLIError('command not found')
   }
 
-  const project = await getProjectConfig()
-  const commands = project?.commands ?? []
+  // Honour --force-in-worktree for custom commands too. Built-in commands get
+  // it from BaseCommand, but this hook runs before any oclif flag parsing.
+  const {argv: rawArgs, forced} = extractForceInWorktreeFlag(opts.argv ?? [])
+  if (forced) {
+    process.env[FORCE_IN_WORKTREE_ENV] = '1'
+  }
+
+  // `invocation` is the checkout the user actually ran devctl from. Custom
+  // commands are per-checkout (dev servers, URLs, secrets), so their handler
+  // is loaded and executed there, and it is what handlers see as
+  // `config`/`project`, exactly as in devctl 7.
+  //
+  // `shared` is the redirected project (the main checkout when run from a
+  // linked worktree). It owns the Docker stack and is exposed to handlers as
+  // `shared` for the few that need it. The two are the same object when not
+  // in a worktree or when --force-in-worktree is set.
+  const invocation = await getProjectConfig({forceInWorktree: true})
+  const shared = await getProjectConfig({quiet: true})
+  const commands = invocation?.commands ?? shared?.commands ?? []
 
   // oclif with topicSeparator=" " converts "secrets node-api" into "secrets:node-api".
   // Try exact match first, then fall back to matching just the first segment.
@@ -166,20 +185,36 @@ const hook: Hook<'command_not_found'> = async opts => {
     throw new Errors.CLIError(`command ${id} not found`)
   }
 
-  const cwd = project?.cwd ?? process.cwd()
-  const rawArgs = opts.argv ?? []
   const args = [...extraArgs, ...rawArgs]
+  const handlerSpec = entry.handler
 
-  const resolvedHandler = await resolveHandlerFile(entry.handler, cwd, commandName)
+  const location = await resolveCustomCommandLocation({
+    invocationCwd: invocation?.cwd,
+    sharedCwd: shared?.cwd,
+    fallbackCwd: process.cwd(),
+    resolveHandler: cwd => resolveHandlerFile(handlerSpec, cwd, commandName),
+  })
+  const {cwd, handler: resolvedHandler} = location
+
+  if (location.fellBackToShared) {
+    process.stderr.write(
+      chalk.yellow(
+        `devctl: "${commandName}" is not defined in ${invocation?.cwd}; running the main checkout's copy from ${cwd}\n`,
+      ),
+    )
+  }
+
+  // Handlers see the config of the checkout they run in.
+  const project = cwd === shared?.cwd ? shared : invocation
 
   if (!resolvedHandler.exists) {
-    if (entry.handler.includes('/') || entry.handler.startsWith('.')) {
+    if (handlerSpec.includes('/') || handlerSpec.startsWith('.')) {
       throw new Errors.CLIError(
         `Custom command "${commandName}" handler not found at ${resolvedHandler.path}`
       )
     }
 
-    await runProcess(entry.handler, args, cwd, commandName)
+    await runProcess(handlerSpec, args, cwd, commandName)
     return
   }
 
@@ -197,6 +232,7 @@ const hook: Hook<'command_not_found'> = async opts => {
       cwd,
       config: project,
       project,
+      shared,
       // Backwards compatibility with gluegun-based custom commands (v3.x)
       parameters: {
         first: args[0],
