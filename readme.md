@@ -71,6 +71,16 @@ devctl --help
 - `devctl secrets` - Pull secrets from configured providers
 - `devctl compile` - Generate docker-compose.yaml (advanced)
 
+## Git Worktrees
+
+A devctl project is one shared dev stack: containers, ports and the proxy are the same no matter which checkout you run from. To avoid several worktrees fighting over that stack, devctl detects when it is run inside a linked git worktree (`git worktree add`) and transparently runs against the main checkout instead. It prints a notice on stderr when it does so.
+
+If you really want an isolated stack for a worktree, pass `--force-in-worktree` to any command:
+
+```bash
+devctl switch --force-in-worktree
+```
+
 ## Custom Commands (TypeScript Example)
 
 Define a custom command in `.devctl.yaml` and implement the handler in TypeScript.
