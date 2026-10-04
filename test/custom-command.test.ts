@@ -1,18 +1,17 @@
-const test = require('node:test')
-const assert = require('node:assert/strict')
-const {
+import {test, expect} from 'vitest'
+import {
   extractForceInWorktreeFlag,
   resolveCustomCommandLocation,
-} = require('../dist/lib/custom-command')
+} from '../src/lib/custom-command'
 
 const MAIN = '/repo/main'
 const WT = '/repo/.worktrees/feature'
 
-function resolverWith(existsIn) {
-  const calls = []
+function resolverWith(existsIn: string[]) {
+  const calls: string[] = []
   return {
     calls,
-    resolveHandler: async cwd => {
+    resolveHandler: async (cwd: string) => {
       calls.push(cwd)
       return {path: `${cwd}/.devctl/commands/dev`, exists: existsIn.includes(cwd), isModule: true}
     },
@@ -20,14 +19,14 @@ function resolverWith(existsIn) {
 }
 
 test('extractForceInWorktreeFlag strips the flag and reports it', () => {
-  assert.deepEqual(extractForceInWorktreeFlag(['--worktree', '--force-in-worktree', '--port', '3000']), {
+  expect(extractForceInWorktreeFlag(['--worktree', '--force-in-worktree', '--port', '3000'])).toEqual({
     argv: ['--worktree', '--port', '3000'],
     forced: true,
   })
 })
 
 test('extractForceInWorktreeFlag leaves argv alone when absent', () => {
-  assert.deepEqual(extractForceInWorktreeFlag(['--web']), {argv: ['--web'], forced: false})
+  expect(extractForceInWorktreeFlag(['--web'])).toEqual({argv: ['--web'], forced: false})
 })
 
 test('runs the handler from the invoking worktree when it defines it', async () => {
@@ -38,10 +37,11 @@ test('runs the handler from the invoking worktree when it defines it', async () 
     fallbackCwd: '/elsewhere',
     resolveHandler: r.resolveHandler,
   })
-  assert.equal(loc.cwd, WT)
-  assert.equal(loc.handler.path, `${WT}/.devctl/commands/dev`)
-  assert.equal(loc.fellBackToShared, false)
-  assert.deepEqual(r.calls, [WT], 'must not touch the shared checkout when not needed')
+  expect(loc.cwd).toBe(WT)
+  expect(loc.handler.path).toBe(`${WT}/.devctl/commands/dev`)
+  expect(loc.fellBackToShared).toBe(false)
+  // must not touch the shared checkout when not needed
+  expect(r.calls).toEqual([WT])
 })
 
 test('falls back to the main checkout handler and cwd when the worktree lacks it', async () => {
@@ -52,10 +52,10 @@ test('falls back to the main checkout handler and cwd when the worktree lacks it
     fallbackCwd: '/elsewhere',
     resolveHandler: r.resolveHandler,
   })
-  assert.equal(loc.cwd, MAIN)
-  assert.equal(loc.handler.path, `${MAIN}/.devctl/commands/dev`)
-  assert.equal(loc.fellBackToShared, true)
-  assert.deepEqual(r.calls, [WT, MAIN])
+  expect(loc.cwd).toBe(MAIN)
+  expect(loc.handler.path).toBe(`${MAIN}/.devctl/commands/dev`)
+  expect(loc.fellBackToShared).toBe(true)
+  expect(r.calls).toEqual([WT, MAIN])
 })
 
 test('reports a missing handler against the invoking checkout when neither has it', async () => {
@@ -66,9 +66,9 @@ test('reports a missing handler against the invoking checkout when neither has i
     fallbackCwd: '/elsewhere',
     resolveHandler: r.resolveHandler,
   })
-  assert.equal(loc.cwd, WT)
-  assert.equal(loc.handler.exists, false)
-  assert.equal(loc.fellBackToShared, false)
+  expect(loc.cwd).toBe(WT)
+  expect(loc.handler.exists).toBe(false)
+  expect(loc.fellBackToShared).toBe(false)
 })
 
 test('main checkout: invocation and shared are the same, resolved once', async () => {
@@ -79,9 +79,9 @@ test('main checkout: invocation and shared are the same, resolved once', async (
     fallbackCwd: '/elsewhere',
     resolveHandler: r.resolveHandler,
   })
-  assert.equal(loc.cwd, MAIN)
-  assert.equal(loc.fellBackToShared, false)
-  assert.deepEqual(r.calls, [MAIN])
+  expect(loc.cwd).toBe(MAIN)
+  expect(loc.fellBackToShared).toBe(false)
+  expect(r.calls).toEqual([MAIN])
 })
 
 test('uses the fallback cwd when no config was found anywhere', async () => {
@@ -92,6 +92,6 @@ test('uses the fallback cwd when no config was found anywhere', async () => {
     fallbackCwd: '/elsewhere',
     resolveHandler: r.resolveHandler,
   })
-  assert.equal(loc.cwd, '/elsewhere')
-  assert.deepEqual(r.calls, ['/elsewhere'])
+  expect(loc.cwd).toBe('/elsewhere')
+  expect(r.calls).toEqual(['/elsewhere'])
 })

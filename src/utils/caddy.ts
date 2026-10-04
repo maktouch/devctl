@@ -28,10 +28,11 @@ export function deriveConfigName(content: string): string | null {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('#')) continue
 
-    // Skip snippet definitions like (snippet-name)
-    if (braceDepth === 0 && trimmed.startsWith('(')) continue
+    // Snippet definitions like (snippet-name) are not site addresses, but
+    // their braces still have to be counted below to keep the depth balanced.
+    const isSnippet = braceDepth === 0 && trimmed.startsWith('(')
 
-    if (braceDepth === 0 && trimmed.includes('{')) {
+    if (braceDepth === 0 && !isSnippet && trimmed.includes('{')) {
       const addressPart = trimmed.replace(/\s*\{.*$/, '').trim()
       if (addressPart) {
         // Take first address (split on comma/space)
@@ -39,8 +40,8 @@ export function deriveConfigName(content: string): string | null {
         if (firstAddr) {
           const hostname = firstAddr
             .replace(/^https?:\/\//, '')
-            .replace(/:\d+$/, '')
             .replace(/\/.*$/, '')
+            .replace(/:\d+$/, '')
           if (hostname && hostname !== '*' && !hostname.startsWith(':')) {
             return hostname
           }
@@ -68,17 +69,17 @@ export function extractHostnames(content: string): string[] {
   for (const line of lines) {
     const trimmed = line.trim()
     if (!trimmed || trimmed.startsWith('#')) continue
-    if (braceDepth === 0 && trimmed.startsWith('(')) continue
+    const isSnippet = braceDepth === 0 && trimmed.startsWith('(')
 
-    if (braceDepth === 0 && trimmed.includes('{')) {
+    if (braceDepth === 0 && !isSnippet && trimmed.includes('{')) {
       const addressPart = trimmed.replace(/\s*\{.*$/, '').trim()
       if (addressPart) {
         const addresses = addressPart.split(/[\s,]+/).filter(Boolean)
         for (const addr of addresses) {
           const hostname = addr
             .replace(/^https?:\/\//, '')
-            .replace(/:\d+$/, '')
             .replace(/\/.*$/, '')
+            .replace(/:\d+$/, '')
           if (hostname && hostname !== '*' && !hostname.startsWith(':')) {
             hostnames.push(hostname)
           }
