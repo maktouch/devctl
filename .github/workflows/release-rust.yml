@@ -112,11 +112,26 @@ jobs:
             --artifacts artifacts \
             --out npm-dist
 
+      # Skip anything already on the registry so a partially failed release
+      # can be retried safely.
       - name: Publish platform packages
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
         run: |
           for pkg in devctl-darwin-arm64 devctl-darwin-x64 devctl-linux-arm64 devctl-linux-x64; do
+            if [ "$(npm view "@maktouch/$pkg@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
+              echo "@maktouch/$pkg@$VERSION already published, skipping"
+              continue
+            fi
             npm publish "./npm-dist/$pkg" --access public --provenance
           done
 
       - name: Publish main package
-        run: npm publish ./npm-dist/devctl --access public --provenance
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          if [ "$(npm view "@maktouch/devctl@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
+            echo "@maktouch/devctl@$VERSION already published, skipping"
+            exit 0
+          fi
+          npm publish ./npm-dist/devctl --access public --provenance
