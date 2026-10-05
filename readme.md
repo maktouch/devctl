@@ -11,17 +11,16 @@ DevCTL is a CLI app designed to:
 
 ## Requirements
 
-- Node 16.18.1+
-- pnpm (recommended) or npm
 - Docker
 - Docker Compose V2
+- Node.js 18+ (only needed to install via npm and for JavaScript-based custom commands / `.devconfig.js` files)
 
 ## Technology Stack
 
-- **TypeScript 5.9** - Modern, type-safe development
-- **oclif 4** - Industry-standard CLI framework
-- **pnpm** - Fast, efficient package manager
-- **Docker Compose V2** - Container orchestration
+devctl is a single native binary written in **Rust**, distributed through npm
+(prebuilt binaries for macOS and Linux, x64 and arm64). JavaScript extension
+points (`.devconfig.cjs`/`.js` files and JS custom-command handlers) still
+work; they are executed through Node.
 
 ## What DevCTL is useful for
 
@@ -31,7 +30,7 @@ DevCTL is a CLI app designed to:
 - You switch between projects back and forth, and they all have their own services to run, and they collide in ports.
 - You have a new guy to onboard fast.
 
-DevCTL decreases the onboarding time of new devs in any of our projects. All the new users needs to have installed is docker (with docker compose V2) and NodeJS 16+. Once a project is setup with devctl, its users does not require knowledge of docker.
+DevCTL decreases the onboarding time of new devs in any of our projects. All the new users needs to have installed is docker (with docker compose V2) and Node.js (to install devctl via npm). Once a project is setup with devctl, its users does not require knowledge of docker.
 
 ## What DevCTL is **NOT**
 
@@ -91,10 +90,12 @@ If the checkout you are in does not define the handler file (for example an olde
 
 `--force-in-worktree` is accepted by custom commands too. It is stripped before the remaining arguments reach the handler.
 
-## Custom Commands (TypeScript Example)
+## Custom Commands (JavaScript Example)
 
-Define a custom command in `.devctl.yaml` and implement the handler in TypeScript.
-TypeScript handlers are compiled on the fly using esbuild — no extra dependencies needed in your project.
+Define a custom command in `.devctl.yaml` and implement the handler as an
+executable script, a shell script, or a JavaScript module. JS module handlers
+are executed through Node and receive a payload object. (TypeScript handlers
+work too on Node 22.18+, which strips types natively.)
 
 ```yaml
 # .devctl.yaml
@@ -104,27 +105,28 @@ commands:
     handler: .devctl/commands/setup-ssl
 ```
 
-```ts
-// .devctl/commands/setup-ssl/index.ts
-import type { CustomCommandPayload } from "@maktouch/devctl";
-
-export default async function setupSsl(payload: CustomCommandPayload) {
-  const { projectRoot, config, args } = payload;
-
-  console.log("Project root:", projectRoot);
+```js
+// .devctl/commands/setup-ssl/index.js
+module.exports = async function setupSsl({ command, cwd, config, args }) {
+  console.log("Command:", command);
+  console.log("Running in:", cwd);
   console.log("Has config:", Boolean(config));
   console.log("Args:", args);
-}
+};
 ```
 
 ## Development
 
-This project is built with:
-- TypeScript 5.9 for type safety
-- oclif for modern CLI architecture
-- pnpm for efficient package management
+```bash
+cargo build --release   # binary at target/release/devctl
+cargo test              # full test suite
+cargo fmt && cargo clippy --all-targets
+```
 
-See [MIGRATION.md](./MIGRATION.md) for details on the modern architecture.
+Releases are automated: pushing to `master` with a new `version` in
+`Cargo.toml` builds binaries for all platforms and publishes
+`@maktouch/devctl` (plus its platform packages) to npm. See
+`.github/workflows/release-rust.yml`.
 
 ## Documentation
 
@@ -135,4 +137,3 @@ See [MIGRATION.md](./MIGRATION.md) for details on the modern architecture.
 ### References
 
 - [Configuration Reference](./docs/readme.md) - `.devctl.yaml` and `.devconfig.yaml` documentation
-- [Migration Guide](./MIGRATION.md) - Details on the modern TypeScript architecture

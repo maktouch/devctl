@@ -1,0 +1,118 @@
+name: Release (npm)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: release-rust
+  cancel-in-progress: false
+
+jobs:
+  # Publish only when the version in Cargo.toml is not on npm yet, so pushes
+  # to master are idempotent and a version bump cuts a release.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version and compare with npm
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version' Cargo.toml | cut -d'"' -f2)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          PUBLISHED=$(npm view "@maktouch/devctl@${VERSION}" version 2>/dev/null || true)
+          if [ "$PUBLISHED" = "$VERSION" ]; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "@maktouch/devctl@${VERSION} already published — nothing to do."
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "@maktouch/devctl@${VERSION} not on npm — will build and publish."
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.publish == 'true'
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-apple-darwin
+            os: macos-13
+          # musl → fully static binaries that run on any Linux, old or new
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-24.04-arm
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install musl toolchain
+        if: contains(matrix.target, 'musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Test
+        run: cargo test --target ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devctl-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/devctl
+          if-no-files-found: error
+
+  publish:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Trusted Publishing (OIDC) needs npm >= 11.5.1; no token required.
+      # Each package must list this repo + workflow as a trusted publisher
+      # on npmjs.com (Settings -> Trusted Publisher).
+      - name: Ensure npm supports trusted publishing
+        run: npm install -g npm@latest && npm --version
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Assemble npm packages
+        run: |
+          node npm/prepare.mjs \
+            --version "${{ needs.check.outputs.version }}" \
+            --artifacts artifacts \
+            --out npm-dist
+
+      - name: Publish platform packages
+        run: |
+          for pkg in devctl-darwin-arm64 devctl-darwin-x64 devctl-linux-arm64 devctl-linux-x64; do
+            npm publish "./npm-dist/$pkg" --access public --provenance
+          done
+
+      - name: Publish main package
+        run: npm publish ./npm-dist/devctl --access public --provenance

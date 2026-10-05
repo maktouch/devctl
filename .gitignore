@@ -1,15 +1,18 @@
 .DS_Store
 .vscode
+*.code-workspace
+
+# Rust
+/target
+
+# devctl's own generated files (when dogfooding)
+.devctl-*.yaml
+
+# packages/devctl-proxy (Node)
 node_modules
 npm-debug.log
-coverage
-.nyc_output
-dist
-build
 yarn-error.log
-*.code-workspace
-tsconfig.tsbuildinfo
-oclif.manifest.json
 
-# pnpm
-.pnpm-debug.log
+# local manual-release staging
+/.release-manual
+/npm-dist

@@ -11,14 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-
-      - uses: actions/setup-node@v4
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          node-version: 20
+          components: clippy, rustfmt
 
-      - run: pnpm install --frozen-lockfile
+      - uses: Swatinem/rust-cache@v2
 
-      - run: pnpm run build
+      - run: cargo fmt --check
 
-      - run: pnpm test
+      - run: cargo clippy --all-targets -- -D warnings
+
+      - run: cargo test
