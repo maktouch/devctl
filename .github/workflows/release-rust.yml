@@ -112,26 +112,30 @@ jobs:
             --artifacts artifacts \
             --out npm-dist
 
-      # Skip anything already on the registry so a partially failed release
-      # can be retried safely.
-      - name: Publish platform packages
+      # A partially failed release must be retryable: skip versions the
+      # registry already has. npm view reads can lag writes, so a 409
+      # conflict on publish is also treated as "already published".
+      - name: Publish packages
         env:
           VERSION: ${{ needs.check.outputs.version }}
         run: |
-          for pkg in devctl-darwin-arm64 devctl-darwin-x64 devctl-linux-arm64 devctl-linux-x64; do
-            if [ "$(npm view "@maktouch/$pkg@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
-              echo "@maktouch/$pkg@$VERSION already published, skipping"
-              continue
+          publish() {
+            local dir="$1" name="$2"
+            if [ "$(npm view "$name@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
+              echo "$name@$VERSION already published, skipping"
+              return 0
             fi
-            npm publish "./npm-dist/$pkg" --access public --provenance
-          done
+            local out code=0
+            out=$(npm publish "$dir" --access public --provenance 2>&1) || code=$?
+            echo "$out"
+            if [ "$code" -ne 0 ] && echo "$out" | grep -qE "E409|EPUBLISHCONFLICT|over the previously published"; then
+              echo "$name@$VERSION already on the registry (publish conflict), continuing"
+              return 0
+            fi
+            return "$code"
+          }
 
-      - name: Publish main package
-        env:
-          VERSION: ${{ needs.check.outputs.version }}
-        run: |
-          if [ "$(npm view "@maktouch/devctl@$VERSION" version 2>/dev/null)" = "$VERSION" ]; then
-            echo "@maktouch/devctl@$VERSION already published, skipping"
-            exit 0
-          fi
-          npm publish ./npm-dist/devctl --access public --provenance
+          for pkg in devctl-darwin-arm64 devctl-darwin-x64 devctl-linux-arm64 devctl-linux-x64; do
+            publish "./npm-dist/$pkg" "@maktouch/$pkg"
+          done
+          publish ./npm-dist/devctl @maktouch/devctl
