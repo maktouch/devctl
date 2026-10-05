@@ -24,7 +24,7 @@ fn service_choices(project: &Project) -> Vec<Choice> {
         })
         .collect();
 
-    choices.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    choices.sort_by_key(|c| c.name.to_lowercase());
     choices
 }
 
